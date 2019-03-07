@@ -8,7 +8,7 @@ import subprocess
 #c = threading.Condition()
 flag = 0      #shared between Thread_A and Thread_B
 val = 20
-ser = serial.Serial('/dev/ttyUSB1', 115200)
+ser = serial.Serial('/dev/ttyUSB3', 115200)
 
 trackingdata = []
 whitelist = []
@@ -25,17 +25,19 @@ class Serial_thread(threading.Thread):
         global whitelist
         global consents
         #global val     #made global here
-        
         while True:
             line = ser.readline()
-            #print line
-            mac = line.split('{')[1].split('}')[0]
+            print line
+            if "::Consent::" not in line: 
+                continue
+            macs = line.split('{')[1].split('}')[0].split(',')
             consent = line .split('::')[1]
             #print mac
-            if (mac not in whitelist):
-                whitelist += mac
-                consents += consent
-
+            for mac in macs:
+                if (mac not in whitelist):
+                    whitelist += mac
+                    consents += consent
+            print whitelist
 class Tracking_thread(threading.Thread):
     def __init__(self, name):
         threading.Thread.__init__(self)
@@ -49,15 +51,14 @@ class Tracking_thread(threading.Thread):
         process = subprocess.Popen(bashCommand.split(), stdout=subprocess.PIPE )
         for l in iter(lambda: process.stdout.readline(), ''):
             #print  l
-            if "::Consent::" not in l: 
-                continue
             t = str(datetime.now())
             mac = l.split(' ')[0]
             #print mac, t, "\n",
             if (mac in whitelist):
                 print "storing data item", mac, t, "(have consent)"
-            else :
-                print "discarding data item", mac, t, "(no consent)"
+            #else :
+                #print "discarding data item", mac, t, "(no consent)"
+                
 
 
 
